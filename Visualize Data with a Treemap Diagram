@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Treemap Diagram</title>
+  <script src="https://d3js.org/d3.v6.min.js"></script>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+    }
+    #title {
+      text-align: center;
+      font-size: 24px;
+      margin-top: 20px;
+    }
+    #description {
+      text-align: center;
+      font-size: 16px;
+      margin-bottom: 20px;
+    }
+    .tile {
+      stroke: #fff;
+    }
+    #legend {
+      display: flex;
+      justify-content: center;
+      margin-top: 20px;
+    }
+    .legend-item {
+      margin: 0 10px;
+    }
+    #tooltip {
+      position: absolute;
+      background-color: rgba(0, 0, 0, 0.7);
+      color: #fff;
+      padding: 5px;
+      border-radius: 5px;
+      display: none;
+    }
+  </style>
+</head>
+<body>
+  <h1 id="title">Treemap Diagram</h1>
+  <p id="description">Visualization of Video Game Sales Data</p>
+  <div id="tooltip"></div>
+  <svg id="treemap" width="960" height="600"></svg>
+  <div id="legend"></div>
+
+  <script>
+    const url = 'https://cdn.freecodecamp.org/testable-projects-fcc/data/tree_map/video-game-sales-data.json';
+
+    const width = 960;
+    const height = 600;
+    const colors = d3.scaleOrdinal(d3.schemeCategory10);
+
+    const tooltip = d3.select('#tooltip');
+
+    d3.json(url).then(data => {
+      const root = d3.hierarchy(data)
+        .sum(d => d.value)
+        .sort((a, b) => b.value - a.value);
+
+      d3.treemap()
+        .size([width, height])
+        .padding(1)
+        (root);
+
+      const svg = d3.select('#treemap');
+
+      const tile = svg.selectAll('g')
+        .data(root.leaves())
+        .enter().append('g')
+        .attr('transform', d => `translate(${d.x0},${d.y0})`);
+
+      tile.append('rect')
+        .attr('class', 'tile')
+        .attr('data-name', d => d.data.name)
+        .attr('data-category', d => d.data.category)
+        .attr('data-value', d => d.data.value)
+        .attr('width', d => d.x1 - d.x0)
+        .attr('height', d => d.y1 - d.y0)
+        .attr('fill', d => colors(d.data.category))
+        .on('mouseover', (event, d) => {
+          tooltip.style('display', 'block')
+            .style('left', event.pageX + 10 + 'px')
+            .style('top', event.pageY + 10 + 'px')
+            .attr('data-value', d.data.value)
+            .html(`Name: ${d.data.name}<br>Category: ${d.data.category}<br>Value: ${d.data.value}`);
+        })
+        .on('mouseout', () => {
+          tooltip.style('display', 'none');
+        });
+
+      const legend = d3.select('#legend');
+      const categories = [...new Set(root.leaves().map(d => d.data.category))];
+
+      categories.forEach(category => {
+        const legendItem = legend.append('div').attr('class', 'legend-item');
+
+        legendItem.append('div')
+          .style('width', '20px')
+          .style('height', '20px')
+          .style('background-color', colors(category))
+          .style('display', 'inline-block')
+          .style('margin-right', '5px');
+
+        legendItem.append('span').text(category);
+      });
+    });
+  </script>
+</body>
+</html>
